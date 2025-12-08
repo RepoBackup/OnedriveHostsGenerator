@@ -31,12 +31,6 @@ pub async fn handler(req: Request) -> Result<Response<ResponseBody>, Error> {
     }
     .await;
 
-    if uri.path().starts_with("/dns.cache") {
-        const WARN: &str =
-            "# dns.cache is a deprecated endpoint from old php version, please use / instead.\n";
-        ret = format!("{WARN}{ret}");
-    }
-
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/plain")
