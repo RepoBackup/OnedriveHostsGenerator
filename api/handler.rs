@@ -1,7 +1,7 @@
 use http::StatusCode;
 use onedrive_hosts_generator::render;
 use std::collections::HashMap;
-use url::Url;
+use url::form_urlencoded;
 use vercel_runtime::{run, Error, Request, Response, ResponseBody, service_fn};
 
 #[tokio::main]
@@ -10,8 +10,15 @@ async fn main() -> Result<(), Error> {
 }
 
 pub async fn handler(req: Request) -> Result<Response<ResponseBody>, Error> {
-    let url = Url::parse(&req.uri().to_string()).unwrap();
-    let hash_query: HashMap<String, String> = url.query_pairs().into_owned().collect();
+    let uri = req.uri();
+    let hash_query: HashMap<String, String> = uri
+        .query()
+        .map(|q| {
+            form_urlencoded::parse(q.as_bytes())
+                .into_owned()
+                .collect()
+        })
+        .unwrap_or_default();
 
     let ipv4 = hash_query.contains_key("ipv4");
     let ipv6 = hash_query.contains_key("ipv6");
@@ -24,10 +31,7 @@ pub async fn handler(req: Request) -> Result<Response<ResponseBody>, Error> {
     }
     .await;
 
-    if url
-        .path_segments()
-        .is_some_and(|mut segs| segs.next() == Some("dns.cache"))
-    {
+    if uri.path().starts_with("/dns.cache") {
         const WARN: &str =
             "# dns.cache is a deprecated endpoint from old php version, please use / instead.\n";
         ret = format!("{WARN}{ret}");
