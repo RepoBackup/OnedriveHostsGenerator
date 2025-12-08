@@ -1,14 +1,15 @@
+use http::StatusCode;
 use onedrive_hosts_generator::render;
 use std::collections::HashMap;
 use url::Url;
-use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
+use vercel_runtime::{run, Error, Request, Response, ResponseBody, service_fn};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    run(handler).await
+    run(service_fn(handler)).await
 }
 
-pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
+pub async fn handler(req: Request) -> Result<Response<ResponseBody>, Error> {
     let url = Url::parse(&req.uri().to_string()).unwrap();
     let hash_query: HashMap<String, String> = url.query_pairs().into_owned().collect();
 
@@ -41,5 +42,5 @@ pub async fn handler(req: Request) -> Result<Response<Body>, Error> {
         )
         .header("CDN-Cache-Control", "max-age=36000, public")
         .header("Vercel-CDN-Cache-Control", "max-age=36000, public")
-        .body(Body::Text(ret))?)
+        .body(ret.into())?)
 }
